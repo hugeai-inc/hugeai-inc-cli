@@ -1,0 +1,10 @@
+/dist/
+/hugeai-inc-cli
+/hugeai-inc-cli-*
+*.exe
+*.test
+*.out
+coverage.out
+.DS_Store
+.idea/
+.vscode/

@@ -1,0 +1,66 @@
+name: Release
+
+# Tagged releases (vX.Y.Z) build macOS and Linux archives, .deb packages,
+# and a Homebrew formula. The formula is pushed to hugeai-inc/homebrew-tap
+# (Homebrew short name: hugeai-inc/tap) when HOMEBREW_TAP_TOKEN is set.
+#
+# To publish the formula, add a repository secret HOMEBREW_TAP_TOKEN with
+# contents:write on hugeai-inc/homebrew-tap. The default GITHUB_TOKEN cannot
+# push to a different repository.
+#
+# .deb packages are attached to the GitHub Release. Publishing them into a
+# GitHub Pages apt repository is documented in packaging/apt/README.md;
+# set APT_PAGES_TOKEN (or reuse HOMEBREW_TAP_TOKEN with pages access) and
+# uncomment the apt-pages job below when that repo/branch is ready.
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+      - uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: "~> v2"
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+      - name: Attest release checksums
+        if: hashFiles('dist/SHA256SUMS') != ''
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-checksums: dist/SHA256SUMS
+
+  # Optional: publish .deb packages to the GitHub Pages apt repo.
+  # See packaging/apt/README.md. Left commented until the Pages site
+  # and signing key are provisioned.
+  # apt-pages:
+  #   needs: release
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     contents: write
+  #     pages: write
+  #     id-token: write
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Publish debs to the apt repo
+  #       env:
+  #         GH_TOKEN: ${{ secrets.APT_PAGES_TOKEN }}
+  #       run: bash packaging/apt/publish.sh

@@ -1,0 +1,91 @@
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+# GoReleaser config for hugeai-inc-cli.
+# Matches Huge AI Inc conventions from hugeai-inc/mission-control
+# (archives named project_version_os_arch, SHA256SUMS, nfpms, brews
+# targeting hugeai-inc/homebrew-tap) with releases published on this
+# public repository.
+version: 2
+project_name: hugeai-inc-cli
+
+builds:
+  - id: hugeai-inc-cli
+    main: ./cmd/hugeai-inc-cli
+    binary: hugeai-inc-cli
+    env: [CGO_ENABLED=0]
+    goos: [darwin, linux]
+    goarch: [amd64, arm64]
+    flags: [-trimpath]
+    ldflags:
+      - -s -w
+      - -X main.version={{ .Version }}
+      - -X main.commit={{ .FullCommit }}
+      - -X main.date={{ .CommitDate }}
+    mod_timestamp: "{{ .CommitTimestamp }}"
+
+archives:
+  - id: hugeai-inc-cli
+    ids: [hugeai-inc-cli]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    formats: [tar.gz]
+    files:
+      - src: README.md
+        dst: README.md
+        info: {mtime: "{{ .CommitDate }}"}
+      - src: LICENSE
+        dst: LICENSE
+        info: {mtime: "{{ .CommitDate }}"}
+
+checksum:
+  name_template: SHA256SUMS
+  algorithm: sha256
+
+nfpms:
+  - id: hugeai-inc-cli
+    ids: [hugeai-inc-cli]
+    package_name: hugeai-inc-cli
+    file_name_template: "{{ .PackageName }}_{{ .Version }}_{{ .Arch }}"
+    vendor: Huge AI Inc
+    homepage: https://github.com/hugeai-inc/hugeai-inc-cli
+    maintainer: Huge AI Inc <me@stevenzeiler.com>
+    description: "CLI for Huge AI Inc board resolutions, meetings, and director identity keys."
+    license: MIT
+    section: utils
+    formats: [deb]
+    bindir: /usr/bin
+    contents:
+      - src: README.md
+        dst: /usr/share/doc/hugeai-inc-cli/README.md
+        file_info: {mtime: "{{ .CommitDate }}"}
+      - src: LICENSE
+        dst: /usr/share/doc/hugeai-inc-cli/LICENSE
+        file_info: {mtime: "{{ .CommitDate }}"}
+
+# Homebrew formula is written into hugeai-inc/homebrew-tap (Homebrew
+# short name: hugeai-inc/tap). Archives are served from this public repo's
+# GitHub Releases. skip_upload is true unless HOMEBREW_TAP_TOKEN is set,
+# because GITHUB_TOKEN cannot push to a different repository.
+brews:
+  - name: hugeai-inc-cli
+    ids: [hugeai-inc-cli]
+    repository:
+      owner: hugeai-inc
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    directory: Formula
+    skip_upload: "{{ if index .Env \"HOMEBREW_TAP_TOKEN\" }}false{{ else }}true{{ end }}"
+    url_template: "https://github.com/hugeai-inc/hugeai-inc-cli/releases/download/v{{ .Version }}/{{ .ArtifactName }}"
+    homepage: https://github.com/hugeai-inc/hugeai-inc-cli
+    description: "CLI for Huge AI Inc board resolutions, meetings, and director identity keys"
+    license: "MIT"
+    install: |
+      bin.install "hugeai-inc-cli"
+    test: |
+      assert_match "hugeai-inc-cli #{version}", shell_output("#{bin}/hugeai-inc-cli version")
+
+release:
+  github:
+    owner: hugeai-inc
+    name: hugeai-inc-cli
+  draft: false
+  prerelease: auto
+  name_template: "v{{ .Version }}"

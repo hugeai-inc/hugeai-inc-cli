@@ -1,0 +1,31 @@
+# nfpm config for building .deb packages by hand (amd64 and arm64):
+#
+#   nfpm package --config packaging/nfpm.yaml --packager deb --target dist/
+#
+# Tagged releases use the nfpms: section in .goreleaser.yaml instead,
+# which produces the same package name, layout, and file names.
+# See packaging/apt/README.md for serving these packages with apt.
+
+name: hugeai-inc-cli
+arch: ${GOARCH} # amd64 or arm64; override with NFPM_ARCH
+platform: linux
+version: ${VERSION:-0.0.0}
+release: "1"
+section: utils
+priority: optional
+maintainer: Huge AI Inc <me@stevenzeiler.com>
+vendor: Huge AI Inc
+homepage: https://github.com/hugeai-inc/hugeai-inc-cli
+license: MIT
+description: |
+  CLI for Huge AI Inc board resolutions, meetings, and director identity keys.
+
+contents:
+  - src: ./hugeai-inc-cli
+    dst: /usr/bin/hugeai-inc-cli
+    file_info:
+      mode: 0755
+  - src: ./README.md
+    dst: /usr/share/doc/hugeai-inc-cli/README.md
+  - src: ./LICENSE
+    dst: /usr/share/doc/hugeai-inc-cli/LICENSE
